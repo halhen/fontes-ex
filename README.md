@@ -21,7 +21,13 @@ Given the time limit of about five hours, I focused on showcasing a bit of best-
  * The users are researchers, which means that they are well versed in statistics and its terminology.
  * Users will be on computers (as opposed to mobile devices), which is why I had a reasonable-resolution, computer monitor in mind for the UI.
  * The data to be analyzed is only the data provided. I've prepared the code to switch data sets or to implement dynamic data (via uploaded files, databases, or the like), but to keep complexity down I check data quality in build time and let the app assume it is OK.
- 
+
+In the three levels of design, I prioritized and spent time accordingly:
+
+ * Product design: 20% (solving the right problem; difficult to do given my lack of context (see below))
+ * Interaction design: 70% (making it usable)
+ * Graphic design: 10% (make it pretty; very little time spent here, both since the users are internal and to save time)
+
 ## Limitations
 
 The two main limitations of this code are time and lack of context.
