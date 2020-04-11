@@ -1,7 +1,13 @@
 library(shiny)
 library(shinyWidgets)
 
+
+#
+# Plain menu
+#
+
 filterMenuOutput <- function(id, label) {
+  message(id)
   ns <- NS(id)
   tagList(
     h2(label),
@@ -9,7 +15,6 @@ filterMenuOutput <- function(id, label) {
     uiOutput(ns('reactiveUI'))
   )
 }
-
 
 filterMenu <- function(input, output, session, df.patients) {
   
@@ -88,3 +93,83 @@ filterMenu <- function(input, output, session, df.patients) {
   
   return (df.filtered)
 }
+
+
+
+
+#
+# Joint filtering and highlighting menu, returning the proper data
+# as well as a column highlighted for rows to be highlighted
+#
+
+
+filterAndHighlightMenuOutput <- function(id) {
+  ns <- NS(id)
+  
+  tagList(
+    uiOutput(ns('menu_stats')),
+    plotOutput(ns('menu_stats_plot'), height = '30px'),
+    hr(),
+    tabsetPanel(
+      tabPanel('Filter',
+               filterMenuOutput(ns('menu_filter'), 'Show patients with')
+      ),
+      tabPanel('Highlight',
+               filterMenuOutput(ns('menu_highlight'), 'Highlight patients with')
+      )
+    )
+  )
+}
+
+
+filterAndHighlightMenu <- function(input, output, session, data_patients_reactive) {
+  ns <- session$ns
+  
+  df.patients_filtered <- callModule(filterMenu, 'menu_filter', data_patients_reactive)
+  df.patients_highlighted <- callModule(filterMenu, 'menu_highlight', data_patients_reactive)
+  
+  df.menu_stats <- reactive({
+    tibble(
+      total = nrow(data_patients()),
+      filtered = nrow(df.patients()),
+      highlighted = sum(df.patients()$highlighted),
+      unhighlighted = filtered - highlighted,
+      hidden = total - filtered
+    )
+  })
+  
+  output$menu_stats_plot <- renderPlot({
+    df.menu_stats() %>%
+      transmute(highlighted, unhighlighted, hidden) %>%
+      gather(key, value) %>%
+      mutate(key = ordered(key, levels = c('hidden', 'unhighlighted', 'highlighted'))) %>%
+      ggplot(aes('', value, fill = key)) +
+        geom_col(color = 'black') +
+        coord_flip() +
+        scale_fill_manual(values = c('hidden' = 'white', 'unhighlighted' = 'lightgray', 'highlighted' = '#428BCA')) +
+        theme_void() +
+        theme(legend.position = 'none')
+  }, bg = 'transparent')
+  
+  output$menu_stats <- renderUI({
+    with(df.menu_stats(), tagList(
+      p(
+        'Highlighted: ', highlighted, br(),
+        'Not highlighted: ', unhighlighted, br(),
+        'Hidden: ', hidden
+      )
+    ))
+  })
+  
+  df.patients <- reactive({
+    df.patients_filtered() %>%
+      left_join(df.patients_highlighted() %>%
+                  transmute(USUBJID, highlighted = TRUE),
+                by = 'USUBJID') %>%
+      mutate(highlighted = coalesce(highlighted, FALSE))
+  })
+  
+  return (df.patients)
+}
+
+

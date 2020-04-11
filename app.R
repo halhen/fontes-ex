@@ -17,17 +17,7 @@ ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(width = 3,
             h4('Patients'),
-            uiOutput('menu_stats'),
-            plotOutput('menu_stats_plot', height = '30px'),
-            hr(),
-            tabsetPanel(
-                tabPanel('Filter',
-                         filterMenuOutput('menu_filter', 'Show patients with')
-                ),
-                tabPanel('Highlight',
-                         filterMenuOutput('menu_highlight', 'Highlight patients with')
-                )
-            )
+            filterAndHighlightMenuOutput('sidebar_menu')
         ),
         mainPanel(width = 9,
             tabsetPanel(
@@ -48,66 +38,24 @@ ui <- fluidPage(
 
 server <- function(input, output) {
     
-    df.patients_filtered <- callModule(filterMenu, 'menu_filter', reactive(data_patients()))
-    df.patients_highlighted <- callModule(filterMenu, 'menu_highlight', reactive(data_patients()))
+    
+    df.patients <- callModule(filterAndHighlightMenu, 'sidebar_menu', reactive(data_patients()))
     
     df.labtests <- reactive({
         data_labtests() %>%
-            semi_join(df.patients_filtered(), by = 'USUBJID')
-    })
-    
-    df.menu_stats <- reactive({
-        df.filtered <- df.patients_filtered() %>%
-            left_join(df.patients_highlighted() %>%
-                          transmute(USUBJID, highlighted = TRUE),
-                      by = 'USUBJID')
-        
-        tibble(
-            total = nrow(data_patients()),
-            filtered = nrow(df.filtered),
-            highlighted = sum(df.filtered$highlighted, na.rm=TRUE),
-            unhighlighted = filtered - highlighted,
-            hidden = total - filtered
-        )
-    })
-    
-    output$menu_stats_plot <- renderPlot({
-        df.menu_stats() %>%
-            transmute(highlighted, unhighlighted, hidden) %>%
-            gather(key, value) %>%
-            mutate(key = ordered(key, levels = c('hidden', 'unhighlighted', 'highlighted'))) %>%
-            ggplot(aes('', value, fill = key)) +
-                geom_col(color = 'black') +
-                coord_flip() +
-                scale_fill_manual(values = c('hidden' = 'white', 'unhighlighted' = 'lightgray', 'highlighted' = '#428BCA')) +
-                theme_void() +
-                theme(legend.position = 'none')
-    }, bg = 'transparent')
-    
-    output$menu_stats <- renderUI({
-        with(df.menu_stats(), tagList(
-            p(
-                'Highlighted: ', highlighted, br(),
-                'Not highlighted: ', unhighlighted, br(),
-                'Hidden: ', hidden
-            )
-        ))
+            semi_join(df.patients(), by = 'USUBJID')
     })
     
     output$distributions_plot <- renderPlot({
+        req(nrow(df.patients()) > 0)
+        
         # Internal function for neater syntax
         plot <- function(var) {
-            df.tmp <- df.patients_filtered() %>%
-                left_join(df.patients_highlighted() %>%
-                              transmute(USUBJID, highlighted = TRUE),
-                          by = 'USUBJID') %>%
-                mutate(highlighted = coalesce(highlighted, FALSE)) %>%
+            df.tmp <- df.patients() %>%
                 mutate(RACE = abbreviate(RACE, 6)) # To make sure we have readable axes
             
             plot_distribution(df.tmp, {{ var }}, highlighted)
         }
-        
-        req(nrow(df.patients_filtered()) > 0)
         
         # Patchwork a set of plots into a single graphics
         (plot(SEX) | plot(AGE) | plot(RACE) | plot(country)) /
@@ -119,11 +67,7 @@ server <- function(input, output) {
     
     
     output$patients_table <- renderDataTable({
-        df.patients_filtered() %>%
-            left_join(df.patients_highlighted() %>%
-                          transmute(USUBJID, highlighted = TRUE),
-                      by = 'USUBJID') %>%
-            mutate(highlighted = coalesce(highlighted, FALSE)) %>%
+        df.patients() %>%
             transmute(USUBJID,
                       Country = country,
                       AGE,
@@ -152,16 +96,11 @@ server <- function(input, output) {
     output$patient_table_selected_labtests_plot <- renderPlot({
         selected_row <- input$patients_table_rows_selected
         req(selected_row)
-        patient_id <- df.patients_filtered()[selected_row, ] %>%
+        patient_id <- df.patients()[selected_row, ] %>%
             pull(USUBJID)
         
         df.tmp <- df.labtests() %>%
-            semi_join(df.patients_filtered(), by = 'USUBJID') %>%
-            left_join(df.patients_highlighted() %>%
-                          transmute(USUBJID, highlighted = TRUE),
-                      by = 'USUBJID') %>%
-            mutate(highlighted = coalesce(highlighted, FALSE))
-        
+            inner_join(df.patients(), by = 'USUBJID')
         
         df.tmp %>%
             filter(USUBJID == patient_id) %>%
@@ -181,7 +120,7 @@ server <- function(input, output) {
         req(selected_row)
         
         # Don't push new modal when data changes, only when a new row is selected. Therefore, isolate()
-        patient <- isolate(df.patients_filtered())[selected_row, ]
+        patient <- isolate(df.patients())[selected_row, ]
         
         showModal(modalDialog(
             fluidPage(
