@@ -1,4 +1,5 @@
 library(shiny)
+library(tidyverse)
 
 ui <- fluidPage(
     titlePanel("Data Expolorer - Henrik Lindberg"),
