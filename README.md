@@ -1,6 +1,6 @@
 # Introduction
 
-This is my submission for the [programming exercise}(https://github.com/fontes-lab/RShinyProgrammingExercise) given for the R/Shiny developer position at Fontes Lab.
+This is my submission for the [programming exercise](https://github.com/fontes-lab/RShinyProgrammingExercise) given for the R/Shiny developer position at Fontes Lab.
 
 Features:
 
