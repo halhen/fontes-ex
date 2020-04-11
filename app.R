@@ -1,19 +1,41 @@
+library(tidyverse)
+library(patchwork)
+
 library(DT)
 library(shiny)
 library(shinyWidgets)
-library(tidyverse)
 
 source('data.R')
 source('filter_menu.R')
+source('util.R')
+
+theme_set(theme_minimal() +
+              theme(text = element_text(size = 16)))
 
 ui <- fluidPage(
     titlePanel("Data Explorer - Henrik Lindberg"),
     sidebarLayout(
-        sidebarPanel(
-            filterMenuOutput('menu_filter', 'Show patients with')
-        ),
-        mainPanel(
+        sidebarPanel(width = 3,
+            h4('Patients'),
+            uiOutput('menu_stats'),
+            plotOutput('menu_stats_plot', height = '30px'),
+            hr(),
             tabsetPanel(
+                tabPanel('Filter',
+                         filterMenuOutput('menu_filter', 'Show patients with')
+                ),
+                tabPanel('Highlight',
+                         filterMenuOutput('menu_highlight', 'Highlight patients with')
+                )
+            )
+        ),
+        mainPanel(width = 9,
+            tabsetPanel(
+                tabPanel('Patient Distributions',
+                         h2('Patient Distributions'),
+                         p('Highlight patients in the sidebar to compare groups'),
+                         plotOutput('distributions_plot', height = '80vh')
+                ),
                 tabPanel('Patients',
                          h2('Patients'),
                          p('Click a patient so see their complete record'),
@@ -27,11 +49,73 @@ ui <- fluidPage(
 server <- function(input, output) {
     
     df.patients_filtered <- callModule(filterMenu, 'menu_filter', reactive(data_patients()))
+    df.patients_highlighted <- callModule(filterMenu, 'menu_highlight', reactive(data_patients()))
     
     df.labtests <- reactive({
         data_labtests() %>%
             semi_join(df.patients_filtered(), by = 'USUBJID')
     })
+    
+    df.menu_stats <- reactive({
+        df.filtered <- df.patients_filtered() %>%
+            left_join(df.patients_highlighted() %>%
+                          transmute(USUBJID, highlighted = TRUE),
+                      by = 'USUBJID')
+        
+        tibble(
+            total = nrow(data_patients()),
+            filtered = nrow(df.filtered),
+            highlighted = sum(df.filtered$highlighted, na.rm=TRUE),
+            unhighlighted = filtered - highlighted,
+            hidden = total - filtered
+        )
+    })
+    
+    output$menu_stats_plot <- renderPlot({
+        df.menu_stats() %>%
+            transmute(highlighted, unhighlighted, hidden) %>%
+            gather(key, value) %>%
+            mutate(key = ordered(key, levels = c('hidden', 'unhighlighted', 'highlighted'))) %>%
+            ggplot(aes('', value, fill = key)) +
+                geom_col(color = 'black') +
+                coord_flip() +
+                scale_fill_manual(values = c('hidden' = 'white', 'unhighlighted' = 'lightgray', 'highlighted' = 'blue')) +
+                theme_void() +
+                theme(legend.position = 'none')
+    }, bg = 'transparent')
+    
+    output$menu_stats <- renderUI({
+        with(df.menu_stats(), tagList(
+            p(
+                'Highlighted: ', highlighted, br(),
+                'Not highlighted: ', unhighlighted, br(),
+                'Hidden: ', hidden
+            )
+        ))
+    })
+    
+    output$distributions_plot <- renderPlot({
+        # Internal function for neater syntax
+        plot <- function(var) {
+            df.tmp <- df.patients_filtered() %>%
+                left_join(df.patients_highlighted() %>%
+                              transmute(USUBJID, highlighted = TRUE),
+                          by = 'USUBJID') %>%
+                mutate(highlighted = coalesce(highlighted, FALSE)) %>%
+                mutate(RACE = abbreviate(RACE, 8)) # To make sure we have readable axes
+            
+            plot_distribution(df.tmp, {{ var }}, highlighted)
+        }
+        
+        req(nrow(df.patients_filtered()) > 0)
+        
+        # Patchwork a set of plots into a single graphics
+        (plot(SEX) | plot(AGE) | plot(RACE) | plot(country)) /
+        (plot(BMRKR1) | plot(BMRKR2) | plot(ACTARM))
+    })
+    
+    
+    
     
     output$patients_table <- renderDataTable({
         df.patients_filtered() %>%
