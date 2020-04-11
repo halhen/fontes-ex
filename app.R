@@ -79,7 +79,7 @@ server <- function(input, output) {
             ggplot(aes('', value, fill = key)) +
                 geom_col(color = 'black') +
                 coord_flip() +
-                scale_fill_manual(values = c('hidden' = 'white', 'unhighlighted' = 'lightgray', 'highlighted' = 'blue')) +
+                scale_fill_manual(values = c('hidden' = 'white', 'unhighlighted' = 'lightgray', 'highlighted' = '#428BCA')) +
                 theme_void() +
                 theme(legend.position = 'none')
     }, bg = 'transparent')
@@ -119,12 +119,26 @@ server <- function(input, output) {
     
     output$patients_table <- renderDataTable({
         df.patients_filtered() %>%
+            left_join(df.patients_highlighted() %>%
+                          transmute(USUBJID, highlighted = TRUE),
+                      by = 'USUBJID') %>%
+            mutate(highlighted = coalesce(highlighted, FALSE)) %>%
+            transmute(USUBJID,
+                      Country = country,
+                      AGE,
+                      SEX,
+                      RACE,
+                      ACTARM,
+                      BMRKR1,
+                      BMRKR2,
+                      Highlighted = ifelse(highlighted, 'Highlighted', '')) %>%
             datatable(rownames = FALSE,
                       selection = 'single',
                       extensions = c("Buttons"), 
                       options = list(dom = 'frtipB',
                                      buttons = c('copy', 'csv', 'excel'))) %>%
-            formatRound('BMRKR1', digits = 3)
+            formatRound('BMRKR1', digits = 3) %>%
+            formatStyle('Highlighted', target = 'row', backgroundColor = styleEqual(c('', 'Highlighted'), c('#f6f6f6', '#b5d8f4')))
     }, server = FALSE)
     
     output$patient_table_selected_labtests_plot <- renderPlot({
@@ -146,9 +160,9 @@ server <- function(input, output) {
             filter(USUBJID == patient_id) %>%
             ggplot(aes((day - 1)/7, AVAL, group = USUBJID)) +
                 geom_line(data = filter(df.tmp, !highlighted), color = 'lightgray', alpha = 0.5) +
-                geom_line(data = filter(df.tmp, highlighted), color = 'blue', alpha = 0.5) +
-                geom_line(size = 0.8) +
-                geom_point(size = 4, shape = 21, fill = 'white') +
+                geom_line(data = filter(df.tmp, highlighted), color = '#428BCA', alpha = 0.5) +
+                geom_line(size = 1) +
+                geom_point(size = 4) +
                 labs(x = 'Week', y = '') +
                 facet_wrap(~ LBTEST, ncol = 1, scales = 'free_y') +
                 theme(text = element_text(size = 20))

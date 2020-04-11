@@ -24,5 +24,5 @@ plot_distribution <- function(df, var, highlight) {
   plot +
     labs(y = '') +
     theme(legend.position = 'none') +
-    scale_fill_manual(values = c('high' = 'blue', 'low' = 'lightgray'))
+    scale_fill_manual(values = c('high' = '#428BCA', 'low' = 'lightgray'))
 }
