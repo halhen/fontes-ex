@@ -9,6 +9,7 @@ source('data.R')
 source('filter_menu.R')
 source('util.R')
 
+
 theme_set(theme_minimal() +
               theme(text = element_text(size = 12)))
 
@@ -24,12 +25,12 @@ ui <- fluidPage(
                 tabPanel('Patient Distributions',
                          h2('Patient Distributions'),
                          p('Highlight patients in the sidebar to compare groups'),
-                         plotOutput('distributions_plot', height = '80vh')
+                         plotOutput('distributions_plot', height = '80vh') %>% uiLoader()
                 ),
                 tabPanel('Patients',
                          h2('Patients'),
                          p('Click a patient so see their complete record'),
-                         dataTableOutput('patients_table')
+                         dataTableOutput('patients_table') %>% uiLoader()
                 )
             )
         )
@@ -124,7 +125,7 @@ server <- function(input, output) {
                                          p('Treatment: ', ACTARM)
                     )),
                     column(8,
-                           plotOutput('patient_table_selected_labtests_plot', height = 800)
+                           plotOutput('patient_table_selected_labtests_plot', height = 800) %>% uiLoader()
                            
                     )
                 )

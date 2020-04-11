@@ -1,3 +1,4 @@
+library(shinycustomloader)
 library(tidyverse)
 
 plot_distribution <- function(df, var, highlight) {
@@ -25,4 +26,8 @@ plot_distribution <- function(df, var, highlight) {
     labs(y = '') +
     theme(legend.position = 'none') +
     scale_fill_manual(values = c('high' = '#428BCA', 'low' = 'lightgray'))
+}
+
+uiLoader <- function(ui) {
+  withLoader(ui, type = 'html', loader = 'loader3')
 }

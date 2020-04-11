@@ -1,13 +1,14 @@
 library(shiny)
 library(shinyWidgets)
 
+source('util.R')
+
 
 #
 # Plain menu
 #
 
 filterMenuOutput <- function(id, label) {
-  message(id)
   ns <- NS(id)
   tagList(
     h2(label),
@@ -108,14 +109,14 @@ filterAndHighlightMenuOutput <- function(id) {
   
   tagList(
     uiOutput(ns('menu_stats')),
-    plotOutput(ns('menu_stats_plot'), height = '30px'),
+    plotOutput(ns('menu_stats_plot'), height = '30px')  %>% uiLoader(),
     hr(),
     tabsetPanel(
       tabPanel('Filter',
-               filterMenuOutput(ns('menu_filter'), 'Show patients with')
+               filterMenuOutput(ns('menu_filter'), 'Show patients with') %>% uiLoader()
       ),
       tabPanel('Highlight',
-               filterMenuOutput(ns('menu_highlight'), 'Highlight patients with')
+               filterMenuOutput(ns('menu_highlight'), 'Highlight patients with') %>% uiLoader()
       )
     )
   )
