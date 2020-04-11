@@ -51,18 +51,21 @@ filterMenu <- function(input, output, session, df.patients) {
   
   
   df.filtered <- reactive({
-    req(input$AGE)
+    df.tmp <- df.prettified()
     
-    df.tmp <- df.prettified() %>%
-      filter(AGE >= input$AGE[1], AGE <= input$AGE[2]) %>%
-      filter(SEX %in% input$SEX) %>%
-      filter(RACE %in% input$RACE) %>%
-      filter(country %in% input$country) %>%
-      
-      filter(BMRKR1_pretty >= input$BMRKR1_pretty[1], BMRKR1_pretty <= input$BMRKR1_pretty[2]) %>%
-      filter(BMRKR2 %in% input$BMRKR2) %>%
-      
-      filter(ACTARM %in% input$ACTARM)
+    # If the UI has been rendered, filtered by it. If not, return all the data
+    if (!is.null(input$AGE)) {
+      df.tmp <- df.tmp %>%
+        filter(AGE >= input$AGE[1], AGE <= input$AGE[2]) %>%
+        filter(SEX %in% input$SEX) %>%
+        filter(RACE %in% input$RACE) %>%
+        filter(country %in% input$country) %>%
+        
+        filter(BMRKR1_pretty >= input$BMRKR1_pretty[1], BMRKR1_pretty <= input$BMRKR1_pretty[2]) %>%
+        filter(BMRKR2 %in% input$BMRKR2) %>%
+        
+        filter(ACTARM %in% input$ACTARM)
+    }
     
     df.tmp %>%
       select(-BMRKR1_pretty) # Undo the prettyfication, to not leak internal data
