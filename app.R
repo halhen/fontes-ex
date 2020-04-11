@@ -19,16 +19,12 @@ ui <- fluidPage(
 )
 
 server <- function(input, output) {
-    df.patients <- reactive({
-        data_patients() %>%
-            mutate(BMRKR1_pretty = signif(BMRKR1, 1))
-    })
     
     df.labtests <- reactive({
         data_labtests()
     })
 
-    df.patients_filtered <- callModule(filterMenu, 'menu_filter', df.patients)
+    df.patients_filtered <- callModule(filterMenu, 'menu_filter', reactive(data_patients()))
     
     
     output$patients_table <- renderDataTable({

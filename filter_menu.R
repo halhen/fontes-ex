@@ -12,12 +12,19 @@ filterMenuOutput <- function(id, label) {
 
 
 filterMenu <- function(input, output, session, df.patients) {
+  
+  df.prettified <- reactive({
+    df.patients() %>%
+      mutate(BMRKR1_pretty = signif(BMRKR1, 1))
+  })
+  
+  
   output$reactiveUI <- renderUI({
     ns <- session$ns
     
     ui_pickerOptions <- pickerOptions(actionsBox = TRUE, selectedTextFormat = 'count > 4')
     
-    with(df.patients(), 
+    with(df.prettified(), 
       tagList(
         h3('Demographics'),
         sliderInput(ns('AGE'), 'AGE', min = min(AGE), max = max(AGE),
@@ -46,7 +53,7 @@ filterMenu <- function(input, output, session, df.patients) {
   df.filtered <- reactive({
     req(input$AGE)
     
-    df.tmp <- df.patients() %>%
+    df.tmp <- df.prettified() %>%
       filter(AGE >= input$AGE[1], AGE <= input$AGE[2]) %>%
       filter(SEX %in% input$SEX) %>%
       filter(RACE %in% input$RACE) %>%
@@ -57,7 +64,8 @@ filterMenu <- function(input, output, session, df.patients) {
       
       filter(ACTARM %in% input$ACTARM)
     
-    df.tmp
+    df.tmp %>%
+      select(-BMRKR1_pretty) # Undo the prettyfication, to not leak internal data
   })
   
   return (df.filtered)
