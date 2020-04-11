@@ -8,7 +8,7 @@ source('data.R')
 
 test_that('data_patients() has good data', {
   expect_equal(nrow(data_patients()), 452)
-  expect_equal(colnames(data_patients()), c('STUDYID', 'USUBJID', 'country', 'id', 'AGE', 'SEX', 'RACE', 'ACTARM', 'ACTARMCD', 'BMRKR1', 'BMRKR2'))
+  expect_equal(colnames(data_patients()), c('STUDYID', 'USUBJID', 'country', 'id', 'AGE', 'SEX', 'RACE', 'ACTARM', 'ACTARMCD', 'BMRKR1', 'BMRKR2', 'screening_ALT', 'screening_CRP', 'screening_IGA'))
   
   expect_true(all(!is.na(data_patients()$country)))
   expect_true(all(!is.na(data_patients()$BMRKR2))) # Verify that the conversion to a factor went well
@@ -19,7 +19,7 @@ test_that('data_patients() has good data', {
 
 
 test_that('data_labtests() has good data', {
-  expect_equal(nrow(data_labtests()), 9492)
+  expect_equal(nrow(data_labtests()), 8136)
   expect_equal(colnames(data_labtests()), c('USUBJID', 'LBTESTCD', 'LBTEST', 'LBCAT', 'AVAL', 'AVALU', 'AVISIT', 'day'))
   
   expect_true(all(!is.na(data_labtests()$day)))

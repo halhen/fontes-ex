@@ -111,6 +111,7 @@ server <- function(input, output) {
         
         # Patchwork a set of plots into a single graphics
         (plot(SEX) | plot(AGE) | plot(RACE) | plot(country)) /
+        (plot(screening_ALT) | plot(screening_CRP) | plot(screening_IGA)) /
         (plot(BMRKR1) | plot(BMRKR2) | plot(ACTARM))
     })
     
@@ -131,6 +132,9 @@ server <- function(input, output) {
                       ACTARM,
                       BMRKR1,
                       BMRKR2,
+                      screening_ALT,
+                      screening_CRP,
+                      screening_IGA,
                       Highlighted = ifelse(highlighted, 'Highlighted', '')) %>%
             datatable(rownames = FALSE,
                       selection = 'single',
@@ -148,7 +152,6 @@ server <- function(input, output) {
             pull(USUBJID)
         
         df.tmp <- df.labtests() %>%
-            filter(day > 0) %>%
             semi_join(df.patients_filtered(), by = 'USUBJID') %>%
             left_join(df.patients_highlighted() %>%
                           transmute(USUBJID, highlighted = TRUE),
@@ -189,6 +192,10 @@ server <- function(input, output) {
                            hr(),
                            p('BMRKR1: ', round(BMRKR1, 3)),
                            p('BMRKR2: ', BMRKR2),
+                           hr(),
+                           p('Screening ALT: ', round(screening_ALT, 3)),
+                           p('Screening CRP: ', round(screening_CRP, 3)),
+                           p('Screening IGA: ', round(screening_IGA, 3)),
                            hr(),
                            p('Treatment: ', ACTARM)
                     )),

@@ -14,16 +14,20 @@ library(tidyverse)
 # in capital letters, and generated / added ones in lowercase.
 
 data_patients <- function() {
+  df.patient_labvals <- data_labvalues_read() %>%
+    filter(AVISIT == 'SCREENING') %>%
+    transmute(USUBJID, screening = paste0('screening_', LBTESTCD), AVAL, BMRKR1, BMRKR2) %>%
+    spread(screening, AVAL)
+  
   data_patients_read() %>%
-    inner_join(data_labvalues_read() %>%
-                 group_by(USUBJID) %>%
-                 summarize(BMRKR1 = first(BMRKR1), BMRKR2 = first(BMRKR2)),
+    inner_join(df.patient_labvals,
                by = 'USUBJID')
 }
 
 
 data_labtests <- function() {
   data_labvalues_read() %>%
+    filter(AVISIT != 'SCREENING') %>%
     select(USUBJID, LBTESTCD, LBTEST, LBCAT, AVAL, AVALU, AVISIT, day)
 }
 
@@ -41,8 +45,7 @@ data_patients_read <- function() {
 data_labvalues_read <- function() {
   df.tmp <- suppressMessages(read_tsv('data/Random_LabValuesInfo_2020.tsv')) %>%
     mutate(BMRKR2 = ordered(BMRKR2, levels = c('LOW', 'MEDIUM', 'HIGH'))) %>%
-    mutate(day = case_when(AVISIT == 'SCREENING' ~ -99,
-                           AVISIT == 'BASELINE' ~ 1,
+    mutate(day = case_when(AVISIT == 'BASELINE' ~ 1,
                            TRUE ~ str_extract(AVISIT, 'DAY [0-9]+') %>%
                              str_remove_all('[^0-9]') %>%
                              as.numeric()))
