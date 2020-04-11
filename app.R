@@ -93,27 +93,8 @@ server <- function(input, output) {
             formatStyle('Highlighted', target = 'row', backgroundColor = styleEqual(c('', 'Highlighted'), c('#f6f6f6', '#b5d8f4')))
     }, server = FALSE)
     
-    output$patient_table_selected_labtests_plot <- renderPlot({
-        selected_row <- input$patients_table_rows_selected
-        req(selected_row)
-        patient_id <- df.patients()[selected_row, ] %>%
-            pull(USUBJID)
-        
-        df.tmp <- df.labtests() %>%
-            inner_join(df.patients(), by = 'USUBJID')
-        
-        df.tmp %>%
-            filter(USUBJID == patient_id) %>%
-            ggplot(aes((day - 1)/7, AVAL, group = USUBJID)) +
-                geom_line(data = filter(df.tmp, !highlighted), color = 'lightgray', alpha = 0.5) +
-                geom_line(data = filter(df.tmp, highlighted), color = '#428BCA', alpha = 0.5) +
-                geom_line(size = 1) +
-                geom_point(size = 4) +
-                labs(x = 'Week', y = '') +
-                facet_wrap(~ LBTEST, ncol = 1, scales = 'free_y') +
-                theme(text = element_text(size = 20))
-        
-    })
+    
+    # Pop-up when clicking a subject in the patient table
     
     observe({
         selected_row <- input$patients_table_rows_selected
@@ -126,21 +107,21 @@ server <- function(input, output) {
             fluidPage(
                 fluidRow(
                     with(patient, column(4,
-                           p('id: ', id),
-                           p('country: ', country),
-                           hr(),
-                           p('AGE: ', AGE),
-                           p('SEX: ', SEX),
-                           p('RACE: ', RACE),
-                           hr(),
-                           p('BMRKR1: ', round(BMRKR1, 3)),
-                           p('BMRKR2: ', BMRKR2),
-                           hr(),
-                           p('Screening ALT: ', round(screening_ALT, 3)),
-                           p('Screening CRP: ', round(screening_CRP, 3)),
-                           p('Screening IGA: ', round(screening_IGA, 3)),
-                           hr(),
-                           p('Treatment: ', ACTARM)
+                                         p('id: ', id),
+                                         p('country: ', country),
+                                         hr(),
+                                         p('AGE: ', AGE),
+                                         p('SEX: ', SEX),
+                                         p('RACE: ', RACE),
+                                         hr(),
+                                         p('BMRKR1: ', round(BMRKR1, 3)),
+                                         p('BMRKR2: ', BMRKR2),
+                                         hr(),
+                                         p('Screening ALT: ', round(screening_ALT, 3)),
+                                         p('Screening CRP: ', round(screening_CRP, 3)),
+                                         p('Screening IGA: ', round(screening_IGA, 3)),
+                                         hr(),
+                                         p('Treatment: ', ACTARM)
                     )),
                     column(8,
                            plotOutput('patient_table_selected_labtests_plot', height = 800)
@@ -149,7 +130,31 @@ server <- function(input, output) {
                 )
             ), size = 'l', easyClose = TRUE, title = patient$USUBJID
         ))
-
+        
+    })
+    
+    output$patient_table_selected_labtests_plot <- renderPlot({
+        selected_row <- input$patients_table_rows_selected
+        req(selected_row)
+        patient_id <- df.patients()[selected_row, ] %>%
+            pull(USUBJID)
+        
+        df.tmp <- df.labtests() %>%
+            inner_join(df.patients() %>%
+                           transmute(USUBJID, highlighted),
+                       by = 'USUBJID')
+        
+        df.tmp %>%
+            filter(USUBJID == patient_id) %>%
+            ggplot(aes((day - 1)/7, AVAL, group = USUBJID)) +
+                geom_line(data = filter(df.tmp, !highlighted), color = 'lightgray', alpha = 0.5) +
+                geom_line(data = filter(df.tmp, highlighted), color = '#428BCA', alpha = 0.5) +
+                geom_line(size = 1) +
+                geom_point(size = 4) +
+                labs(x = 'Week', y = '') +
+                facet_wrap(~ LBTEST, ncol = 1, scales = 'free_y') +
+                theme(text = element_text(size = 20))
+        
     })
 }
 
