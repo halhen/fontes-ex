@@ -13,7 +13,7 @@ library(tidyverse)
 # makes for an implicit but clear separation between data original to the data
 # in capital letters, and generated / added ones in lowercase.
 
-df.patients <- function() {
+data_patients <- function() {
   data_patients_read() %>%
     inner_join(data_labvalues_read() %>%
                  group_by(USUBJID) %>%
@@ -22,7 +22,7 @@ df.patients <- function() {
 }
 
 
-df.labtests <- function() {
+data_labtests <- function() {
   data_labvalues_read() %>%
     select(USUBJID, LBTESTCD, LBTEST, LBCAT, AVAL, AVALU, AVISIT, day)
 }
