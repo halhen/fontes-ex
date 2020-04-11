@@ -10,7 +10,7 @@ source('filter_menu.R')
 source('util.R')
 
 theme_set(theme_minimal() +
-              theme(text = element_text(size = 16)))
+              theme(text = element_text(size = 12)))
 
 ui <- fluidPage(
     titlePanel("Data Explorer - Henrik Lindberg"),
@@ -102,7 +102,7 @@ server <- function(input, output) {
                               transmute(USUBJID, highlighted = TRUE),
                           by = 'USUBJID') %>%
                 mutate(highlighted = coalesce(highlighted, FALSE)) %>%
-                mutate(RACE = abbreviate(RACE, 8)) # To make sure we have readable axes
+                mutate(RACE = abbreviate(RACE, 6)) # To make sure we have readable axes
             
             plot_distribution(df.tmp, {{ var }}, highlighted)
         }
@@ -140,8 +140,12 @@ server <- function(input, output) {
                       selection = 'single',
                       extensions = c("Buttons"), 
                       options = list(dom = 'frtipB',
+                                     pageLength = 25,
                                      buttons = c('copy', 'csv', 'excel'))) %>%
             formatRound('BMRKR1', digits = 3) %>%
+            formatRound('screening_ALT', digits = 3) %>%
+            formatRound('screening_CRP', digits = 3) %>%
+            formatRound('screening_IGA', digits = 3) %>%
             formatStyle('Highlighted', target = 'row', backgroundColor = styleEqual(c('', 'Highlighted'), c('#f6f6f6', '#b5d8f4')))
     }, server = FALSE)
     
