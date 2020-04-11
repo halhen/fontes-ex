@@ -134,12 +134,19 @@ server <- function(input, output) {
             pull(USUBJID)
         
         df.tmp <- df.labtests() %>%
-            filter(day > 0)
+            filter(day > 0) %>%
+            semi_join(df.patients_filtered(), by = 'USUBJID') %>%
+            left_join(df.patients_highlighted() %>%
+                          transmute(USUBJID, highlighted = TRUE),
+                      by = 'USUBJID') %>%
+            mutate(highlighted = coalesce(highlighted, FALSE))
+        
         
         df.tmp %>%
             filter(USUBJID == patient_id) %>%
             ggplot(aes((day - 1)/7, AVAL, group = USUBJID)) +
-                geom_line(data = df.tmp, color = '#aaaaaa', alpha = 0.5) +
+                geom_line(data = filter(df.tmp, !highlighted), color = 'lightgray', alpha = 0.5) +
+                geom_line(data = filter(df.tmp, highlighted), color = 'blue', alpha = 0.5) +
                 geom_line(size = 0.8) +
                 geom_point(size = 4, shape = 21, fill = 'white') +
                 labs(x = 'Week', y = '') +
